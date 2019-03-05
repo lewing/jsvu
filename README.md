@@ -1,5 +1,7 @@
 # jsvu [![Build status](https://travis-ci.org/GoogleChromeLabs/jsvu.svg?branch=master)](https://travis-ci.org/GoogleChromeLabs/jsvu)
 
+**Note** This is a forked version of the original project for [Mono WebAssembly](https://github.com/mono/mono/tree/master/sdks/wasm).
+
 _jsvu_ is the <b>J</b>ava<b>S</b>cript (engine) <b>V</b>ersion <b>U</b>pdater.
 
 _jsvu_ makes it easy to install recent versions of various JavaScript engines without having to compile them from source.
@@ -8,7 +10,7 @@ _jsvu_ makes it easy to install recent versions of various JavaScript engines wi
 
 ## Installation
 
-**Note:** _jsvu_ requires Node.js v10+. (_jsvu_ follows the latest [active LTS](https://github.com/nodejs/Release#release-schedule) version of Node.)
+**Note:** _jsvu_ requires Node.js v8.9.0+. (_jsvu_ follows the latest [active LTS](https://github.com/nodejs/Release#release-schedule) version of Node.)
 
 Install the _jsvu_ CLI:
 
