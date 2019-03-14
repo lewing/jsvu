@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// Copyright 2017 Google Inc.
+// Copyright 2019 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the “License”);
 // you may not use this file except in compliance with the License.
@@ -97,6 +97,11 @@ const promptEngines = () => {
 				checked: true,
 			},
 			{
+				name: 'V8 debug',
+				value: 'v8-debug',
+				checked: false,
+			},
+			{
 				name: 'XS',
 				value: 'xs',
 				checked: true,
@@ -112,14 +117,58 @@ const promptEngines = () => {
 	// Warn if an update is available.
 	updateNotifier({ pkg }).notify();
 
-	// Read the user configuration, and prompt for any missing info.
+	// Read the user configuration + CLI arguments, and prompt for any
+	// missing info.
 	const status = getStatus();
+
+	const args = process.argv.slice(2);
+	for (const arg of args) {
+		if (arg.startsWith('--os=')) {
+			const os = arg.split('=')[1];
+			status.os = os;
+		}
+		else if (arg.startsWith('--engines=')) {
+			const enginesArg = arg.split('=')[1];
+			const engines = enginesArg === 'all' ?
+				['chakra', 'javascriptcore', 'spidermonkey', 'v8', 'xs'] :
+				enginesArg.split(',');
+			status.engines = engines;
+		}
+		else if (arg.includes('@')) {
+			const [engine, version] = arg.split('@');
+			status.engine = engine;
+			status.version = version;
+		}
+	}
+
 	if (status.os === undefined) {
 		status.os = (await promptOs()).step;
-		setStatus(status);
+		// Don't store one-off CLI args in the persistent configuration.
+		const statusCopy = { ...status };
+		delete statusCopy.engine;
+		delete statusCopy.version;
+		setStatus(statusCopy);
 	} else {
 		log.success(`Read OS from config: ${status.os}`);
 	}
+
+	// The user provided a specific engine + version, e.g. `jsvu v8@7.2`.
+	if (status.engine && status.version) {
+		const { engine, version } = status;
+		log.success(`Read engine + version from CLI argument: ${engine} v${
+			version}`);
+		const installSpecificEngineVersion =
+			require('./shared/install-specific-version.js');
+		await installSpecificEngineVersion({
+			...require(`./engines/${engine}/index.js`),
+			os: status.os,
+			version: version,
+		});
+		return;
+	}
+
+	// The user wants to install or update engines, but we don’t know
+	// which ones.
 	if (status.engines === undefined || status.engines.length === 0) {
 		status.engines = (await promptEngines()).step;
 		if (status.engines.length === 0) {
@@ -131,8 +180,12 @@ const promptEngines = () => {
 	}
 
 	// Install the desired JavaScript engines.
+	const updateEngine = require('./shared/engine.js');
 	for (const engine of status.engines) {
-		await require(`./engines/${engine}/index.js`);
+		await updateEngine({
+			status: status,
+			...require(`./engines/${engine}/index.js`),
+		});
 	}
 
 })();

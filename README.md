@@ -42,6 +42,7 @@ To update the installed JavaScript engines later on, just run `jsvu` again.
 | [**JavaScriptCore**][jsc] | `javascriptcore` or `jsc` | ✅                  | ✅ <sup>\*</sup> | ✅ <sup>\*</sup>     | ✅        | ✅        |
 | [**SpiderMonkey**][sm]    | `spidermonkey` or `sm`    | ✅                  | ✅               | ✅                   | ✅        | ✅        |
 | [**V8**][v8]              | `v8`                      | ✅                  | ✅               | ✅                   | ✅        | ✅        |
+| [**V8 debug**][v8]        | `v8-debug`                | ✅                  | ✅               | ✅                   | ✅        | ✅        |
 | [**XS**][xs]              | `xs`                      | ✅ <sup>(32)</sup>  | ✅               | ✅ <sup>(32)</sup>   | ✅        | ✅        |
 
 <sup>\*</sup> JavaScriptCore requires external dependencies to run on Windows:
@@ -51,7 +52,7 @@ To update the installed JavaScript engines later on, just run `jsvu` again.
 [ch]: https://github.com/Microsoft/ChakraCore/issues/2278#issuecomment-277301120
 [sm]: https://bugzilla.mozilla.org/show_bug.cgi?id=1336514
 [jsc]: https://bugs.webkit.org/show_bug.cgi?id=179945
-[v8]: https://bugs.chromium.org/p/v8/issues/detail?id=5918
+[v8]: https://bugs.chromium.org/p/chromium/issues/detail?id=936383
 [xs]: https://github.com/Moddable-OpenSource/moddable-xst
 
 ## Integration with eshost-cli
@@ -108,6 +109,38 @@ However, there are use cases for running jsvu within non-interactive environment
 jsvu --os=mac64 --engines=all
 # Equivalent to:
 jsvu --os=mac64 --engines=chakra,javascriptcore,spidermonkey,v8,xs
+```
+
+Note that `--engines=all` does not install the `v8-debug` binaries.
+
+## Installing specific versions
+
+jsvu also supports installing specific versions alongside the main engine binaries (which it keeps up to date). Here’s an example:
+
+```sh
+jsvu v8@7.2.502
+```
+
+Binaries installed using this method are named `${BINARY}-${VERSION}`, so that the above example installs a binary named `v8-7.2.502`. This way, there’s never any conflict with the main `v8` binary, which jsvu can keep up to date.
+
+This feature works for all the supported engines:
+
+```sh
+jsvu chakra@1.11.6
+jsvu javascriptcore@242640
+jsvu spidermonkey@66.0b13
+jsvu v8@7.2.502
+jsvu v8-debug@7.1.302
+jsvu xs@8.7.0
+```
+
+If you pass in an invalid version number, or if the JavaScript engine creators don’t provide a precompiled binary for that specific version, jsvu shows an error.
+
+As a shorthand, for `v8` and `v8-debug` builds, jsvu can even figure out the last known good revision within a [milestone](https://v8.dev/docs/version-numbers). To install the latest available V8 v7.2.x for example, run:
+
+```sh
+jsvu v8@7.2
+# jsvu figures out that this means v7.2.502, and then installs that version.
 ```
 
 ## Security considerations

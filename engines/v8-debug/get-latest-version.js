@@ -13,14 +13,25 @@
 
 'use strict';
 
+const get = require('../../shared/get.js');
 const predictFileName = require('./predict-file-name.js');
 
-const predictUrl = (version, os) => {
+const getLatestVersion = (os) => {
 	const fileName = predictFileName(os);
-	const url =
-		`https://storage.googleapis.com/chromium-v8/official/canary/v8-${
-			fileName}-rel-${version}.zip`;
-	return url;
+	const url = `https://storage.googleapis.com/chromium-v8/official/canary/v8-${
+		fileName}-dbg-latest.json`;
+	return new Promise(async (resolve, reject) => {
+		try {
+			const response = await get(url, {
+				json: true,
+			});
+			const data = response.body;
+			const version = data.version;
+			resolve(version);
+		} catch (error) {
+			reject(error);
+		}
+	});
 };
 
-module.exports = predictUrl;
+module.exports = getLatestVersion;

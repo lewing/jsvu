@@ -20,28 +20,30 @@ const execa = require('execa');
 const { Installer } = require('../../shared/installer.js');
 const unzip = require('../../shared/unzip.js');
 
-const extract = ({ filePath, binary, alias, os }) => {
+const extract = ({ filePath, binary, os }) => {
 	return new Promise(async (resolve, reject) => {
 		const tmpPath = path.dirname(filePath);
 		await unzip({
 			from: filePath,
 			to: tmpPath,
 		});
+		const installer = new Installer({
+			engine: binary,
+			path: tmpPath,
+		});
+		installer.installLibrary('icudtl.dat');
+		installer.installLibrary('natives_blob.bin');
+		installer.installLibrary('snapshot_blob.bin');
 		switch (os) {
 			case 'mac64': {
-				const installer = new Installer({
-					engine: binary,
-					path: `${tmpPath}/Release`,
-				});
-				installer.installLibraryGlob('JavaScriptCore.framework/*');
-				installer.installBinary({ 'jsc': binary }, { symlink: false });
+				installer.installLibraryGlob('*.dylib');
+				installer.installBinary({ 'd8': binary }, { symlink: false });
 				installer.installScript({
 					name: binary,
-					alias: alias,
 					generateScript: (targetPath) => {
 						return `
 							#!/usr/bin/env bash
-							DYLD_FRAMEWORK_PATH="${targetPath}" DYLD_LIBRARY_PATH="${targetPath}" "${targetPath}/${binary}" "$@"
+							"${targetPath}/${binary}" --natives_blob="${targetPath}/natives_blob.bin" --snapshot_blob="${targetPath}/snapshot_blob.bin" "$@"
 						`;
 					}
 				});
@@ -49,20 +51,14 @@ const extract = ({ filePath, binary, alias, os }) => {
 			}
 			case 'linux32':
 			case 'linux64': {
-				const installer = new Installer({
-					engine: binary,
-					path: tmpPath,
-				});
-				installer.installLibraryGlob('lib/*');
-				installer.installBinary({ 'bin/jsc': binary }, { symlink: false });
+				installer.installLibraryGlob('*.so');
+				installer.installBinary({ 'd8': binary }, { symlink: false });
 				installer.installScript({
 					name: binary,
-					alias: alias,
 					generateScript: (targetPath) => {
 						return `
 							#!/usr/bin/env bash
-							LD_LIBRARY_PATH="${targetPath}/lib" exec "${targetPath}/lib/ld-linux${
-								os === 'linux64' ? '-x86-64' : '' }.so.2" "${targetPath}/${binary}" "$@"
+							"${targetPath}/${binary}" --natives_blob="${targetPath}/natives_blob.bin" --snapshot_blob="${targetPath}/snapshot_blob.bin" "$@"
 						`;
 					}
 				});
@@ -70,29 +66,20 @@ const extract = ({ filePath, binary, alias, os }) => {
 			}
 			case 'win32':
 			case 'win64': {
-				const installer = new Installer({
-					engine: binary,
-					path: `${tmpPath}/bin${os === 'win64' ? '64' : '32'}`,
-				});
-				installer.installLibraryGlob('JavaScriptCore.resources/*');
 				installer.installLibraryGlob('*.dll');
-				installer.installLibraryGlob('*.pdb');
-				// One DLL that gets loaded by `jsc.exe`, `jscLib.dll`, depends on the
-				// filename of `jsc.exe`. Because of that, we avoid renaming `jsc.exe`
-				// to `javascriptcore.exe` on Windows.
-				installer.installBinary('jsc.exe', { symlink: false });
+				installer.installBinary(
+					{ 'd8.exe': `${binary}.exe` },
+					{ symlink: false }
+				);
 				installer.installScript({
 					name: `${binary}.cmd`,
-					alias: `${alias}.cmd`,
-					symlink: false,
 					generateScript: (targetPath) => {
 						return `
 							@echo off
-							"${targetPath}\\jsc.exe" %*
+							"${targetPath}\\${binary}.exe" --natives_blob="${targetPath}\\natives_blob.bin" --snapshot_blob="${targetPath}\\snapshot_blob.bin" %*
 						`;
 					}
 				});
-				console.log('NOTE: JavaScriptCore requires external dependencies to run on Windows. Please see README.md for details.');
 				break;
 			}
 		}

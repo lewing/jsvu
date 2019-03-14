@@ -13,14 +13,24 @@
 
 'use strict';
 
-const predictFileName = require('./predict-file-name.js');
+const fs = require('fs');
 
-const predictUrl = (version, os) => {
-	const fileName = predictFileName(os);
-	const url =
-		`https://storage.googleapis.com/chromium-v8/official/canary/v8-${
-			fileName}-rel-${version}.zip`;
-	return url;
+const execa = require('execa');
+const tempy = require('tempy');
+
+const config = require('../../shared/config.js');
+const jsvuPath = config.path;
+
+const test = async ({ binary, alias }) => {
+	const path = tempy.file();
+	const program = `print('Hi!');\n`;
+	fs.writeFileSync(path, program);
+	console.assert(
+		(await execa(`${jsvuPath}/${binary}`, [path])).stdout === 'Hi!'
+	);
+	console.assert(
+		(await execa(`${jsvuPath}/${binary}`, ['-e', program])).stdout === 'Hi!'
+	);
 };
 
-module.exports = predictUrl;
+module.exports = test;
