@@ -27,7 +27,8 @@ const getLatestVersion = () => {
 			const response = await get(url, {
 				json: true
 			});
-			const version = Object.keys(response.body).pop();
+			let version = Object.keys(response.body).pop();
+			version = "67.0b7";
 			resolve(version);
 		} catch (error) {
 			reject(error.response.body);
