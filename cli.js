@@ -123,7 +123,12 @@ const promptEngines = () => {
 
 	const args = process.argv.slice(2);
 	for (const arg of args) {
-		if (arg.startsWith('--os=')) {
+		if (arg === '--help' || arg === '-h') {
+			console.log('\nFor help on script usage and available arguments, please check the online documentation:');
+			console.log('https://github.com/GoogleChromeLabs/jsvu#readme');
+			return;
+		}
+		else if (arg.startsWith('--os=')) {
 			const os = arg.split('=')[1];
 			status.os = os;
 		}
@@ -143,11 +148,7 @@ const promptEngines = () => {
 
 	if (status.os === undefined) {
 		status.os = (await promptOs()).step;
-		// Don't store one-off CLI args in the persistent configuration.
-		const statusCopy = { ...status };
-		delete statusCopy.engine;
-		delete statusCopy.version;
-		setStatus(statusCopy);
+		setStatus(status);
 	} else {
 		log.success(`Read OS from config: ${status.os}`);
 	}
@@ -161,8 +162,7 @@ const promptEngines = () => {
 			require('./shared/install-specific-version.js');
 		await installSpecificEngineVersion({
 			...require(`./engines/${engine}/index.js`),
-			os: status.os,
-			version: version,
+			status: status,
 		});
 		return;
 	}
