@@ -21,7 +21,7 @@ const getLatestVersion = (os) => {
 		try {
 			const response = await get(url);
 			const body = response.body;
-			const version = body.trimEnd().replace(/_/g, '.');
+			const version = body.trimRight().replace(/_/g, '.');
 			resolve(version);
 		} catch (error) {
 			reject(error);
